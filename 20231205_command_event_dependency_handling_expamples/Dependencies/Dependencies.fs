@@ -5,7 +5,7 @@ module DataTypes =
     type Product = { ProductId: string; Name: string; Price: decimal }
 
     type Customer = { CustomerId: string; Name: string; Address: Address }
-    and Address = { Street: string; City: string; State: string; Zip: string }
+    and Address = { Street: string; City: string }
     
 module Repositories =
     

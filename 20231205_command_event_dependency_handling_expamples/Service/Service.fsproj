@@ -6,12 +6,12 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Compile Include="CommandsEvents.fs" />
-        <Compile Include="01-The-Classic-OOP-Domain.fs" />
+        <Compile Include="01-The-Classic-OPP-Service.fs" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\Dependencies\Dependencies.fsproj" />
+      <ProjectReference Include="..\Domain\Domain.fsproj" />
     </ItemGroup>
 
 </Project>
