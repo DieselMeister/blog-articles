@@ -37,16 +37,16 @@ module ClassicOop =
             member _.Id = id
         
         // the properties (state)
-        member val InvoiceId        = invoiceId         with get 
-        member val CustomerId       = customerId        with get
-        member val CustomerName     = customerName      with get
-        member val CustomerStreet   = customerStreet    with get
-        member val CustomerCity     = customerCity      with get
+        member _.InvoiceId        with get() = invoiceId      
+        member _.CustomerId       with get() = customerId    
+        member _.CustomerName     with get() = customerName  
+        member _.CustomerStreet   with get() = customerStreet
+        member _.CustomerCity     with get() = customerCity  
         
-        member _.InvoiceLines with get() = invoiceLines and private set v = invoiceLines <- v
+        member _.InvoiceLines     with get() = invoiceLines 
         
         // the event list
-        member val Events = events with get
+        member _.Events           with get() = events
         
         
         // the methods
@@ -122,11 +122,11 @@ module ClassicOop =
             member _.Id = id        
             
         // the properties
-        member val ProductId          = productId       with get
-        member val ProductName        = productName     with get
-        member val ProductPrice       = productPrice    with get
-        member val ProductQuantity    = productQuantity with get
-        member val TotalPrice         = totalPrice      with get
+        member _.ProductId          with get() = productId       
+        member _.ProductName        with get() = productName     
+        member _.ProductPrice       with get() = productPrice    
+        member _.ProductQuantity    with get() = productQuantity 
+        member _.TotalPrice         with get() = totalPrice      
         
         // the methods
         

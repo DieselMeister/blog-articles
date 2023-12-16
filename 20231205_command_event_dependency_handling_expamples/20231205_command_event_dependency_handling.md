@@ -2,11 +2,12 @@
 
 ## Introduction
 
-This article will show some examples and ways to manage the dependencies in a command-event architecture. 
-What are the pros and what are the cons.
+This article will show some examples or should I say more a small journey, how to manage the dependencies in a command-event architecture.
+At least for me, these were the steps I took in order to solve the problem for myself.
 
-To be honest all the ways I will describe here, are neither right nor wrong. 
-Some of them will feel weird, some of these will break some rules about purity of functions.
+To be honest all the ways I will describe here, are neither right nor wrong. (okay, the fist one feels totally wrong in F# XD)  
+Some of them will feel weird, some of these will break some rules about purity and testability of functions.
+These points will be discussed also.
 
 First at all I will try to establish here the example domain I use. And even example domain sound to huge for that.
 Please be aware, that this is NOT an article about how to model a proper domain, proper commands and events. 
@@ -18,9 +19,10 @@ All the code you find here in this github repository: [here](https://github.com/
 
 ## Prerequisite
 
-You should be a little aware about a command-event architecture. 
-If you are not, please watch the videos from Greg Young, also read the book from Scott Wlaschin.
-
+You should be a little aware about a command-event architecture.   
+If you are not, please watch the videos from Greg Young about CQRS and Event Sourcing.   
+Also read the book from Scott Wlaschin (Domain Modelling Made Functional).  
+Also this one: [here](https://www.youtube.com/watch?v=MHvr71T_LZw&ab_channel=DCF%23Meetup)
 
 ## The Example
 
@@ -161,7 +163,7 @@ The classic OOP approach with an aggregate root and an additional aggregate.
 I kept it simple, no internal handling of already replayed and new events, like shown in the Greg Young example.
 This approach is not important when your write F#, so you can skip it, if you want.
 
-###The Boilerplate:
+### The Boilerplate:
 ```fsharp
 type AggregateId = AggregateId of string  
 
@@ -172,7 +174,7 @@ type IAggregateRoot =
     inherit IAggregate
 ```
 
-###The Domain Code:
+### The Domain Code:
 ```fsharp
 type InvoiceAggregateRoot(
     id : AggregateId,
@@ -193,16 +195,16 @@ type InvoiceAggregateRoot(
         member _.Id = id
     
     // the properties (state)
-    member val InvoiceId        = invoiceId         with get 
-    member val CustomerId       = customerId        with get
-    member val CustomerName     = customerName      with get
-    member val CustomerStreet   = customerStreet    with get
-    member val CustomerCity     = customerCity      with get
+    member _.InvoiceId        with get() = invoiceId      
+    member _.CustomerId       with get() = customerId    
+    member _.CustomerName     with get() = customerName  
+    member _.CustomerStreet   with get() = customerStreet
+    member _.CustomerCity     with get() = customerCity  
     
-    member _.InvoiceLines with get() = invoiceLines and private set v = invoiceLines <- v
+    member _.InvoiceLines     with get() = invoiceLines 
     
     // the event list
-    member val Events = events with get
+    member _.Events           with get() = events
     
     
     // the methods
@@ -278,11 +280,11 @@ and InvoiceLineAggregate(
         member _.Id = id        
         
     // the properties
-    member val ProductId          = productId       with get
-    member val ProductName        = productName     with get
-    member val ProductPrice       = productPrice    with get
-    member val ProductQuantity    = productQuantity with get
-    member val TotalPrice         = totalPrice      with get
+    member _.ProductId          with get() = productId       
+    member _.ProductName        with get() = productName     
+    member _.ProductPrice       with get() = productPrice    
+    member _.ProductQuantity    with get() = productQuantity 
+    member _.TotalPrice         with get() = totalPrice      
     
     // the methods
     
@@ -296,6 +298,7 @@ and InvoiceLineAggregate(
             totalPrice      <- event.TotalPrice
         | _ ->
             failwith "invalid event"
+
 ```
 
 ### The Service Code:

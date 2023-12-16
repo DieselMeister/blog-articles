@@ -6,6 +6,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <Compile Include="01_Tests.fs" />
         <Compile Include="04_Tests.fs" />
     </ItemGroup>
 
@@ -16,6 +17,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Domain\Domain.fsproj" />
+      <ProjectReference Include="..\Service\Service.fsproj" />
     </ItemGroup>
 
 </Project>
