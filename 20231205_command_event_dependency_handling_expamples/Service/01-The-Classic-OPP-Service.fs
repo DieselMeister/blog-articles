@@ -4,12 +4,9 @@ open System.Threading.Tasks
 
 module ClassicOop =
 
-    open System    
-    open Dependencies
     open Dependencies.Repositories    
     open Domain
     open Domain.ClassicOop
-    open DataTypes
     
     type IInvoiceRepository =
         abstract member GetInvoice : invoiceId:string -> Task<InvoiceAggregateRoot option>
