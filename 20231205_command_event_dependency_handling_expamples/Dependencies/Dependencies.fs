@@ -33,7 +33,7 @@ module Repositories =
             member this.GetCustomerById id =
                 task {
                     match id with
-                    | "1" -> return Some { CustomerId = "1"; Name = "Customer 1"; Address = { Street = "123 Main St"; City = "Anytown"; State = "ST"; Zip = "12345" } }
-                    | "2" -> return Some { CustomerId = "2"; Name = "Customer 2"; Address = { Street = "456 Main St"; City = "Anytown"; State = "ST"; Zip = "12345" } }
+                    | "1" -> return Some { CustomerId = "1"; Name = "Customer 1"; Address = { Street = "123 Main St"; City = "Anytown"; } }
+                    | "2" -> return Some { CustomerId = "2"; Name = "Customer 2"; Address = { Street = "456 Main St"; City = "Anytown"; } }
                     | _ -> return None    
                 }

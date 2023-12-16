@@ -8,6 +8,11 @@
     <ItemGroup>
         <Compile Include="CommandsEvents.fs" />
         <Compile Include="01-The-Classic-OOP-Domain.fs" />
+        <Compile Include="FsStyleState.fs" />
+        <Compile Include="02-More-Idomatic-FS-Domain.fs" />
+        <Compile Include="03-Try-Hiding-Dependencies-Mark1.fs" />
+        <Compile Include="04-More-Purity-Testablility.fs" />
+        <Compile Include="05-Try-Hiding-Dependencies-Mark2.fs" />
     </ItemGroup>
 
     <ItemGroup>

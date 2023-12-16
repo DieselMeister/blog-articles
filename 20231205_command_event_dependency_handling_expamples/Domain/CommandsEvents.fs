@@ -1,9 +1,14 @@
-﻿module Domain
+﻿namespace Domain
 
 [<RequireQualifiedAccess>]
 type Command =
     | CreateInvoice of CreateInvoiceData
     | AddInvoiceLine of InvoiceLineData
+        
+        member this.InvoiceId =
+            match this with
+            | CreateInvoice data -> data.InvoiceId
+            | AddInvoiceLine data -> data.InvoiceId
     
 and CreateInvoiceData = {
     InvoiceId: string
@@ -36,6 +41,11 @@ type TotalPrice = TotalPrice of decimal
 type Event =
     | InvoiceCreated of InvoiceCreatedData
     | InvoiceLineAdded of InvoiceLineAddedData
+    
+        member this.InvoiceId =
+            match this with
+            | InvoiceCreated data -> data.InvoiceId
+            | InvoiceLineAdded data -> data.InvoiceId
     
 and InvoiceCreatedData = {
     InvoiceId: InvoiceId

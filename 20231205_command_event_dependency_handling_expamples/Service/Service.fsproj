@@ -7,6 +7,10 @@
 
     <ItemGroup>
         <Compile Include="01-The-Classic-OPP-Service.fs" />
+        <Compile Include="02-More-Idomatic-FS-Service.fs" />
+        <Compile Include="03-Try-Hiding-Dependencies-Mark1.fs" />
+        <Compile Include="04-More-Purity-Terstability.fs" />
+        <Compile Include="05-Try-Hiding-Dependencies-Mark2.fs" />
     </ItemGroup>
 
     <ItemGroup>
