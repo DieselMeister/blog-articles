@@ -1,6 +1,6 @@
 # How to handle external dependencies of your domain in a command-event architecture
 
-### Introduction
+## Introduction
 
 This article will show some examples and ways to manage the dependencies in a command-event architecture. 
 What are the pros and what are the cons.
@@ -16,13 +16,13 @@ how we can deal with external dependencies from a programmer's perspective.
 
 All the code you find here in this github repository: [here](https://github.com/DieselMeister/blog-articles/tree/master/20231205_command_event_dependency_handling_expamples)
 
-### Prerequisite
+## Prerequisite
 
 You should be a little aware about a command-event architecture. 
 If you are not, please watch the videos from Greg Young, also read the book from Scott Wlaschin.
 
 
-### The Example
+## The Example
 
 So let's begin with an example:
 
@@ -33,7 +33,7 @@ we want to assign some products or services the customer bought plus the quantit
 With this small domain, we want to start. And keep in mind, that we don't want to improve the domain here, 
 we want to solve another problem.
 
-### The Domain Description
+## The Domain Description
 
 You see here, when we create an invoice, we have to check, if the customer, even exists in our system. 
 Also, the nature of an invoice is, that an invoice can not carry a simple reference to our customer data, 
@@ -52,7 +52,7 @@ After that, the system provides some invoice lines, where you select a product o
 
 That's it. And yes, this 'domain' can be solved simple with a CRUD implementation, but as I said, that's not the focus here.
 
-### The Problem
+## The Problem
 
 So, what's the problem here? 
 
@@ -70,7 +70,7 @@ So the problem is, how to deal with the additional data we have, when do we call
 in order to check and get the data.
 
 
-### The (dependent) Data Structures in our System
+## The (dependent) Data Structures in our System
 
 Before we start, here are some data structures, we use in our examples:
 ```fsharp
@@ -91,7 +91,7 @@ type ICustomerRepository =
     abstract member GetCustomerById : string -> Task<Customer option>
 ```
 
-### Our Domain DataTypes
+## Our Domain DataTypes
 
 Our commands, we have 2 of them:
 ```fsharp
@@ -151,16 +151,17 @@ type ProductQuantity = ProductQuantity of int
 type TotalPrice = TotalPrice of decimal
 ```
 
-### Before We Start
+## Before We Start
 I will provide first the code, and then we talk about it.
 
 
-### The Classic OOP approach
+## 01. The Classic OOP approach
 
 The classic OOP approach with an aggregate root and an additional aggregate. 
 I kept it simple, no internal handling of already replayed and new events, like shown in the Greg Young example.
+This approach is not important when your write F#, so you can skip it, if you want.
 
-####The Boilerplate:
+###The Boilerplate:
 ```fsharp
 type AggregateId = AggregateId of string  
 
@@ -171,7 +172,7 @@ type IAggregateRoot =
     inherit IAggregate
 ```
 
-####The Domain Code:
+###The Domain Code:
 ```fsharp
 type InvoiceAggregateRoot(
     id : AggregateId,
@@ -297,7 +298,7 @@ and InvoiceLineAggregate(
             failwith "invalid event"
 ```
 
-#### The Service Code:
+### The Service Code:
 ```fsharp
     type IInvoiceRepository =
         abstract member GetInvoice : invoiceId:string -> Task<InvoiceAggregateRoot option>
@@ -375,7 +376,7 @@ and InvoiceLineAggregate(
 ```
 
 
-#### The Discussion:
+### The Discussion:
 
 Please be aware, that this is one way to implement a command-event driven domain in oop. 
 There are probably multiple ways. 
@@ -411,11 +412,11 @@ It's not wrong. I harder to test, maybe harder to understand and the injection o
 but it's easy and straight forward.
 
 
-### The More F# Idiomatic Way
+## 02. The More F# Idiomatic Way
 
 So, let's see, how we can do that in a more F# idiomatic way.
 
-#### The State:
+### The State:
 ```fsharp
 type InvoiceState = {
     InvoiceId      : InvoiceId 
@@ -435,7 +436,7 @@ and InvoiceLine = {
 }
 ```
 
-#### The Domain Code:
+### The Domain Code:
 ```fsharp
 // execute a command (decider)
 let execute getCustomer getProduct command state =
@@ -514,7 +515,7 @@ let applyEvents events state =
 ```
 
 
-#### The Service Code:
+### The Service Code:
 ```fsharp
 // somewhere we have our invoice repository, but here with a slightly different singature
 type IInvoiceRepository =
@@ -565,7 +566,7 @@ type InvoiceService(
             executeCommand invoiceRepo customerRepo productRepo command
 ```
 
-#### The Discussion:
+### The Discussion:
 
 The first thing you see is, that we are not using any aggregate root or sub aggregates.
 We are using a simple state, which is a record type.
@@ -602,11 +603,11 @@ Also the execute function is not pure. We are using a task an call the repositor
 How we handle the problem with parameters, we will see in the next chapter. For the other problem, we have to wait.
 
 
-### Try Hiding The Dependencies (Mark1)
+## 03. Try Hiding The Dependencies (Mark1)
 
 So, let's see, how we can hide the dependencies in the execute function in order to get rid of the parameter problem. At least partially.
 
-#### The Domain Code:
+### The Domain Code:
 ```fsharp
 type Dependencies = {
         GetCustomer : string -> Task<DataTypes.Customer option>
@@ -657,7 +658,7 @@ let execute dependencies command state =
     }
 ```
 
-#### The Service Code:
+### The Service Code:
 ```fsharp
 let private executeCommand
     (invoiceRepo:IInvoiceRepository)
@@ -682,7 +683,7 @@ let private executeCommand
     
 ```
 
-#### The Discussion:
+### The Discussion:
 
 What we here did is to collect all the parameters to one record we call 'Dependencies'. Yes, I know, that sounds creative, I know.
 Also there is nothing much to discuss. At least we reduced the dependencies to one parameter.
@@ -697,13 +698,13 @@ Nothing changed in this approach.
 We didn't solve the problem, we just moved it to another place. But at least our code doesn't look too bad on the domain level. Now it's elsewhere in our code.
 
 
-### More Functional Purity and Testability
+## 04. More Functional Purity and Testability
 
 Okay, now that our execute function only takes 3 parameters and we can focus on testability.
 A wonderful approach to get better testability is to make our domain a pure function. 
 With that we get always the same result for the same input.
 
-#### The Domain Code:
+### The Domain Code:
 ```fsharp
 type Dependencies = {
         NeededCustomerForCreateInvoice : DataTypes.Customer option
@@ -754,7 +755,7 @@ let execute dependencies command state =
         Error "invoice does not exist"
 ```
 
-#### The Service Code:
+### The Service Code:
 ```fsharp
 let private executeCommand
     (invoiceRepo:IInvoiceRepository)
@@ -802,7 +803,7 @@ type InvoiceService(
 ```
 
 
-#### The Discussion:
+### The Discussion:
 
 In order to get our 'execute' function pure, we removed all the external calls from the code and the 'dependencies' record.
 It's also not a task computation anymore.
@@ -844,7 +845,7 @@ Even if you use proper names for the properties.
 For small domains, with not that much additional data, it's totally fine in my option. But can we do better?
 
 
-### Try Hiding The Dependencies (Mark2)
+## 05. Try Hiding The Dependencies (Mark2)
 
 So that's the last approach we discuss here for now. Here we want to sove the problem, that we have basically one dependency record
 for all the commands in our domain. And somehow every command should manage there own needed dependencies.
@@ -852,7 +853,7 @@ for all the commands in our domain. And somehow every command should manage ther
 And that's what we will do here and not break the purity of our execute function.
 
 
-#### The Domain Code:
+### The Domain Code:
 ```fsharp
 // we putting our dependencies into our command, for that we add some "internal" commands
 // we distinguish between commands which came through our api and command which we are using internally
@@ -905,7 +906,7 @@ and InvoiceLineData = {
 }
 ```
 
-#### The Service Code:
+### The Service Code:
 ```fsharp
 let private executeCommand
     (invoiceRepo:IInvoiceRepository)
@@ -960,7 +961,7 @@ type InvoiceService(
             executeCommand invoiceRepo customerRepo productRepo command
 ```
 
-#### The Discussion:
+### The Discussion:
 
 What we here did is introduce the concept on an internal and external command.
 The external commands, are the commands, you use in your api.
@@ -991,7 +992,7 @@ It's a little more work (maybe), but it's more clear and you have a better separ
 
 
 
-### Wait, What about the Reader Monad?
+## Wait, What about the Reader Monad?
 
 Yes, I know, I know. I didn't mention the reader monad at all. You see in the examples, that I use on service level
 the classic oop dependency injection approach, because in practical terms I will use for these services asp.net core and giraffe.
@@ -1007,14 +1008,14 @@ But that's my personal opinion.
 
 BUT I really like to see a solution with a reader monad. So if you have one, please let me know.
 
-### Conclusion
+## Conclusion
 
 I hope you liked this little journey through the different approaches to handle dependencies in your domain.
 For me I have found my personal favorite approach to handle additional data in my domain.
 
 I am curios, what did you do in order to handle this problem. Please let me know.
 
-#### Merry Christmas and a happy new year to all of you. You are an awesome community!
+### Merry Christmas and a happy new year to all of you. You are an awesome community!
   
   
   
