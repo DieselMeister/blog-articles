@@ -398,14 +398,15 @@ That's a pretty forward implementation. It's easy to achieve, beside the huge bo
 but if you implement that in C# it's a common approach. 
 (We will in the next approach, how we 'optimize' that approach and make it more 'functional')
 
-*What about testing?*
+#### What about testing?
 
 You have to Mock all interfaces, you use. 
 That is in OOP a total normal approach. 
 But it's tedious to mock. 
 Also, it's also not a pure implementation of the domain, which can cause issues down the line.
 
-*Conclusion*
+#### Conclusion
+
 It's not something I would ever implement in F#. 
 Also not in C# anymore, because I know better now. 
 I didn't like the whole encapsulation stuff and these Aggregate-Root and sub Aggregate stuff. So for me personal a no.
@@ -581,23 +582,23 @@ We have an 'apply' function, which applies an event to a state and returns a new
 And we have an 'applyEvents' function, which applies a list of events to a state and returns a new state.
 In our further discussion, the 'apply' and 'applyEvents' function will not change any more, so I will leave them out of the code.
 
-Let's focus on the 'execute' function. In order to generate the necessay events, we need, like in the OOP approach,
+Let's focus on the 'execute' function. In order to generate the necessary events, we need, like in the OOP approach,
 additional data from the database. Our customer and out product.
 In this approach we inject the necessary functions to get the data from the database into the 'execute' function.
 
 Later in the service code, we partially apply these functions with the help of your repository interfaces.
 
-Did this approach help us with the dependency management? No. If you think about this approach, this approach test to
+Did this approach help us with the dependency management? No. If you think about this approach, this approach tends to
 get fast out of hands by using more and more parameters in the 'execute' function.
 In the OOP approach these parameters inside the constructor feels more natural and 
 the execution methods do not have that many parameters.
 
 
-*What about testing?*
+#### What about testing?
 
 So instead of mocking interfaces, we have to mock functions and injecting them into the 'execute' function. That doesn't feel better at all.
 
-*Conclusion*
+#### Conclusion
 
 The idiomatic F# approach feels more comfortable and in it's core more elegant, then the OOP approach. 
 We using the functional way to separate data and functions. But we get this parameter problem, which gets out of hands pretty fast.
@@ -606,7 +607,7 @@ Also the execute function is not pure. We are using a task an call the repositor
 How we handle the problem with parameters, we will see in the next chapter. For the other problem, we have to wait.
 
 
-## 03. Try Hiding The Dependencies (Mark1)
+## 03. Try Hiding The Dependencies (Mark I)
 
 So, let's see, how we can hide the dependencies in the execute function in order to get rid of the parameter problem. At least partially.
 
@@ -614,7 +615,7 @@ So, let's see, how we can hide the dependencies in the execute function in order
 ```fsharp
 type Dependencies = {
         GetCustomer : string -> Task<DataTypes.Customer option>
-        GetProduct  : string  -> Task<DataTypes.Product  option>
+        GetProduct  : string -> Task<DataTypes.Product option>
     }
 
 // execute a command (decider)
@@ -692,11 +693,11 @@ What we here did is to collect all the parameters to one record we call 'Depende
 Also there is nothing much to discuss. At least we reduced the dependencies to one parameter.
 The Dependency record will grow fast and it has to be initialized fully before we can use it.
 
-*What about testing?*
+#### What about testing?
 
 Nothing changed in this approach.
 
-*Conclusion*
+#### Conclusion
 
 We didn't solve the problem, we just moved it to another place. But at least our code doesn't look too bad on the domain level. Now it's elsewhere in our code.
 
@@ -711,7 +712,7 @@ With that we get always the same result for the same input.
 ```fsharp
 type Dependencies = {
         NeededCustomerForCreateInvoice : DataTypes.Customer option
-        NeededProductForAddInvoiceLine  : DataTypes.Product  option
+        NeededProductForAddInvoiceLine : DataTypes.Product option
     } with
         static member Empty = {
             NeededCustomerForCreateInvoice = None
@@ -812,8 +813,8 @@ In order to get our 'execute' function pure, we removed all the external calls f
 It's also not a task computation anymore.
 What we have here now, is the pure data inside the dependency record we need to execute the command.
 With that the whole 'execute' function become pure and better testable.
-We build out repositories, that they return option types, so we can easily left the check, if a customer or product exists,
-like it already was. If it's none, then its not there. Easy enough. 
+We build our repositories, that they return option types, so we can easily left the check, if a customer or product exists,
+like it already was. If it's none, then it's not there. Easy enough. 
 
 With that, we moved the external calls to the database up to the service implementation.
 It's now a 'impure-pure-impure' sandwich on the service level.
@@ -824,37 +825,38 @@ we call the database to store our new state. This one is again 'impure'.
 
 What's with the apply function? That's a good question. Because we throw in our example exceptions there,
 the apply function is considered impure. I leave you to decide, which approach you want. The function can easily be made pure.
-But keep in mind, that a missing application of an event to an state is considered an exceptional error in your system.
+But keep in mind, that a missing application of an event to a state is, for me at least, considered an exceptional error in your system.
 It shouldn't happen, if it is happening, your code is wrong and you have to fix it.
-My personal opinion about that is, throw an exception.
+My personal opinion about that is to throw an exception.
 
-Btw. the apply code you see in the chapter "The More F# Idiomatic Way". I left it out, because it's the same.
+Btw. the code of the 'apply' you see in the chapter '02. The More F# Idiomatic Way'. I left it out, because it's the same in part 2 to 5.
 
 One thing, the dependency record can grow bigger and bigger and you will have problem, which property is for what command.
 And that can became a problem. Use proper names in order to know which one blogs to which one.
 
-*What about testing?*
+#### What about testing?
 
 Now that we have a pure function, we are basically in the testing heaven. Same input generates the same output. What do we want more?
 We have to write test data nevertheless or use property based testing to generate the data for us. (I never tried property testing at all.)
 
-*Conclusion*
+#### Conclusion
 
 We are almost at the end of our journey. We have now a pure function and only one additional parameter in our execute function.
-But me only moved the our problem one level up. And I am not satisfied with that. Because our dependency record can grow and grow
+
+But for me, we only moved the our problem one level up. And I am not satisfied with that. Because our dependency record can grow and grow
 and for every additional data we need, wee need to add a property there. And that maybe become confusing over time.
-Even if you use proper names for the properties.
+Even if you use proper names for the properties. It feels like, that the dependency record should not be responsible for all the needed dependencies of you domain.
 
 For small domains, with not that much additional data, it's totally fine in my option. But can we do better?
 
 
-## 05. Try Hiding The Dependencies (Mark2)
+## 05. Try Hiding The Dependencies (Mark II)
 
-So that's the last approach we discuss here for now. Here we want to sove the problem, that we have basically one dependency record
-for all the commands in our domain. And somehow every command should manage there own needed dependencies.
+So that's the last approach we discuss here for now. Here we want to solve the problem, 
+that we have basically one dependency record for all the commands in our domain. 
+And somehow every command should manage there own needed dependencies.
 
 And that's what we will do here and not break the purity of our execute function.
-
 
 ### The Domain Code:
 ```fsharp
@@ -911,6 +913,7 @@ and InvoiceLineData = {
 
 ### The Service Code:
 ```fsharp
+// btw for the repository dependencies here, you can also use a dependency record. Or move this directly into the service class
 let private executeCommand
     (invoiceRepo:IInvoiceRepository)
     (customerRepo:ICustomerRepository)
@@ -983,22 +986,22 @@ Also some of you maybe already have dto's in you api, and do not use the command
 In that case, you have only one set of commands with the necessary dependencies and do the 'mapping' already on the service level.
 
 
-*What about testing?*
+#### What about testing?
 
-We are already in testability heaven and that didn't chane here.
+We are already in testability heaven and that didn't change here.
 
-*Conclusion*
+#### Conclusion
 
 As I mentioned, that's the approach I personally prefer.
 It's a little more work (maybe), but it's more clear and you have a better separation of concerns.
 
-
+And least for me, I am satisfied with this solution and it solves perfectly my problem to manage the dependencies and additional data I need in my domains.
 
 
 ## Wait, What about the Reader Monad?
 
 Yes, I know, I know. I didn't mention the reader monad at all. You see in the examples, that I use on service level
-the classic oop dependency injection approach, because in practical terms I will use for these services asp.net core and giraffe.
+the classic oop dependency injection approach, because in practical terms I will use for these services asp.net core and for example giraffe or Azure Functions.
 And the build in dependency injection container works fine and we didn't have to make it more complicated.
 
 Also I didn't work out any solution with a reader monad. I invite you, I am curios, how you would exactly this example with a reader monad.

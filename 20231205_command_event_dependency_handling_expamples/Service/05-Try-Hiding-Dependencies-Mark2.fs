@@ -15,7 +15,7 @@ type IInvoiceService =
     abstract member ExecuteInvoiceCommand : command:ExternalCommand -> Task<unit>
 
 
-
+// btw for the repository dependencies here, you can also use a dependency record. Or move this directly into the service class
 let private executeCommand
     (invoiceRepo:IInvoiceRepository)
     (customerRepo:ICustomerRepository)
