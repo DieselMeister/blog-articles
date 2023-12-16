@@ -1015,9 +1015,11 @@ For me I have found my personal favorite approach to handle additional data in m
 I am curios, what did you do in order to handle this problem. Please let me know.
 
 #### Merry Christmas and a happy new year to all of you. You are an awesome community!
-
-Twitter: @HardtITSolution
-
+  
+  
+  
+Twitter: @HardtITSolution  
+The Code: [here](https://github.com/DieselMeister/blog-articles/tree/master/20231205_command_event_dependency_handling_expamples)
 
 
 
