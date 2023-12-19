@@ -1185,7 +1185,7 @@ Also a reader monad makes you code not magically pure. If you inject async opera
 
 
 
-## (Overall) Conclusion
+## Last word (your honor) :D
 
 I hope you liked this little journey through the different approaches to handle dependencies in your domain.
 For me I have found my personal favorite approach to handle additional data in my domain.
