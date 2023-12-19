@@ -1,5 +1,20 @@
 # How to handle external dependencies of your domain in a command-event architecture
 
+
+## Update: 2023-12-19
+
+I added in the code and here in this article the reader monad. To be complete about this.
+Also There is a chapter "The Service" to explain, what is meant with the service implementation.
+
+And I want to add, I mention here sometimes the phrase 'normal dependency injection'.
+As you are aware, we use in many cases things like ASP.NET Core and the build in DI container with
+the resulting constructor injection, I call 'normal dependency injection'. 
+(that seem to bother also some people, that wasn't clear about the term)
+
+I see this all pragmatically and foremost I describe my journey here.
+
+But at least I made a reader monad implementation.
+
 ## Introduction
 
 This article will show some examples or should I say more a small journey, how to manage the dependencies in a command-event architecture.
@@ -34,6 +49,13 @@ we want to assign some products or services the customer bought plus the quantit
 
 With this small domain, we want to start. And keep in mind, that we don't want to improve the domain here, 
 we want to solve another problem.
+
+## Update: The Service (2023-12-19)
+In the code samples you will see a service implementation. 
+Consider it as the application layer, application service, domain service or whatever you call it.
+It's not important for the discussion here. But it seems, that some people get confused about it.
+The service is not the API-Layer like Giraffe HttpHandler or MVC Controller or something like that.
+And keep in mind, it's an example and not a real world application.
 
 ## The Domain Description
 
@@ -998,7 +1020,7 @@ It's a little more work (maybe), but it's more clear and you have a better separ
 And least for me, I am satisfied with this solution and it solves perfectly my problem to manage the dependencies and additional data I need in my domains.
 
 
-## Wait, What about the Reader Monad?
+## The Previous Version: The Reader Monad
 
 Yes, I know, I know. I didn't mention the reader monad at all. You see in the examples, that I use on service level
 the classic oop dependency injection approach, because in practical terms I will use for these services asp.net core and for example giraffe or Azure Functions.
@@ -1013,8 +1035,157 @@ But that's my personal opinion.
 *I mean writing code with F# feels like magic, if you compare it to C# or Java.
 
 BUT I really like to see a solution with a reader monad. So if you have one, please let me know.
+(I found someone :D)
 
-## Conclusion
+
+## Updated: 06. The Reader Monad
+
+With the help of two articles, one from Bartosz Sypytkowski ([here](https://www.bartoszsypytkowski.com/dealing-with-complex-dependency-injection-in-f/)) and one from Scott Wlaschin ([here](https://fsharpforfunandprofit.com/posts/dependencies-3/))
+I made an implementation of a reader monad on the service level. 
+The domain code itself is pure and the reader monad didn't change there anything.
+
+### The Reader Monad Implementation (called here Dependency - call it whatever you want)
+```fsharp
+[<Struct>] type Dependency<'env, 'out> = Dependency of ('env -> 'out)
+module Dependency =
+    /// Create value with no dependency requirements.
+    let inline value (x: 'out): Dependency<'env,'out> = Dependency (fun _ -> x)
+    /// Create value which uses dependency.
+    let inline apply (fn: 'env -> 'out): Dependency<'env,'out> = Dependency fn
+    
+    let run (env: 'env) (Dependency fn): 'out = fn env
+    
+    let inline bind (fn: 'a -> Dependency<'env,'b>) effect =
+        Dependency (fun env ->
+            let x = run env effect // compute result of the first effect
+            run env (fn x) // run second effect, based on result of first one
+        )
+        
+    let inline get<'a> = Dependency id
+        
+[<Struct>]
+type DependencyBuilder =
+    member inline __.Return value = Dependency.value value
+    member inline __.Zero () = Dependency.value (Unchecked.defaultof<_>)
+    member inline __.ReturnFrom (effect: Dependency<'env, 'out>) = effect
+    member inline __.Bind(effect, fn) = Dependency.bind fn effect
+    
+let dependency = DependencyBuilder()
+```
+
+### A New Interface
+```fsharp
+type IDependencies =
+    inherit IInvoiceRepository
+    inherit ICustomerRepository
+    inherit IProductRepository
+```
+
+
+### The Service Code:
+```fsharp
+// here we use instead of normal parameter injection, a reader monad (called dependency here)
+let private executeCommand (command:ExternalCommand) =
+    dependency {
+        let! (env:IDependencies) = Dependency.get
+        
+        return task {
+            let! invoice = env.GetInvoice command.InvoiceId
+            // build the internal commands
+            let! internalCommand =
+                task {
+                    match command with
+                    | ExternalCommand.CreateInvoice cmd ->
+                        let! customer = env.GetCustomerById cmd.CustomerId
+                        return Command.CreateInvoice {
+                            InvoiceId = cmd.InvoiceId
+                            CustomerId = cmd.CustomerId
+                            Customer = customer
+                        }
+                    | ExternalCommand.AddInvoiceLine cmd ->
+                        let! product = env.GetProductById cmd.ProductId
+                        return Command.AddInvoiceLine {
+                            InvoiceId = cmd.InvoiceId
+                            ProductId = cmd.ProductId
+                            Product = product
+                            Quantity = cmd.Quantity
+                        }
+                }
+            
+            let result = invoice |> execute internalCommand
+            
+            match result with
+            | Error e -> failwith e
+            | Ok events ->
+                let newInvoiceState = applyEvents invoice events
+                match newInvoiceState with
+                | None -> failwith "no state returned after events applied"
+                | Some newInvoiceState ->
+                    do! env.StoreInvoice newInvoiceState
+        }    
+    }
+    
+    
+    
+type InvoiceService(dependencies:IDependencies) =
+    interface IInvoiceService with
+        member this.ExecuteInvoiceCommand command =
+            Dependency.run dependencies (executeCommand command)
+```
+
+### The Discussion:
+
+Okay, I read some blog posts and tried to understand the reader monad. 
+(it seems to offend people, not to use one!)
+
+So the implementation of the reader monad you see everywhere an I will not describe them.
+But I encourage you to read the blog posts I mentioned above.
+
+In the end you have a computation expression (here called 'dependency'), 
+which you can use to 'inject' your dependencies into your code.
+
+A base thing here is that we unify all our dependencies into one interface. 
+And then hide the 'injection' with the help of the reader monad.
+
+The cool thing here is, that I can call functions inside the reader monad, 
+which are also reader monads and so one, but for this simple example,
+we only hide this one dependency interface.
+
+I definitely have to got deeper in it and see the advantage of it.
+
+#### What about testing?
+
+same as before. We have a pure function and we can test it easily.
+
+#### Conclusion
+
+The reader monad is a cool thing. I changes how I inject the things.
+
+And now came the BUT for this example and an implementation for a 'command executor'.
+
+I can also inject this single interface as an additional parameter.
+```fsharp
+let private executeCommand
+    (env:IDependencies)
+    (command:ExternalCommand) =
+    //...
+```
+(In the code you see it as the file 07)
+
+Here you see, I did it! I injected the dependencies as an additional parameter.
+
+Because I have here only this one function, which is not a composition of multiple functions with multiple dependencies.
+And for this particular example, I don't see the advantage of the reader monad.
+
+And again BUT: If the application grows and you have more and more dependencies, 
+then the reader monad is a cool thing to hide the dependencies and make the code more readable.
+In the end you need only once some 'boilerplate' to have the code for the monad and then you can use it everywhere.
+
+Also a reader monad makes you code not magically pure. If you inject async operations, then you are not pure at all.
+
+
+
+## (Overall) Conclusion
 
 I hope you liked this little journey through the different approaches to handle dependencies in your domain.
 For me I have found my personal favorite approach to handle additional data in my domain.

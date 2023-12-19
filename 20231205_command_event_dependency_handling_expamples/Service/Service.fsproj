@@ -11,6 +11,8 @@
         <Compile Include="03-Try-Hiding-Dependencies-Mark1.fs" />
         <Compile Include="04-More-Purity-Testability.fs" />
         <Compile Include="05-Try-Hiding-Dependencies-Mark2.fs" />
+        <Compile Include="06-The-Reader-Monad.fs" />
+        <Compile Include="07-No-Reader-Monad-SingleParameter.fs" />
     </ItemGroup>
 
     <ItemGroup>
